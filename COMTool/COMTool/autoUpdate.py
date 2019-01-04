@@ -8,7 +8,7 @@ except ImportError:
 
 
 class AutoUpdate:
-    updateUrl = "https://github.com/Neutree/COMTool/releases"
+    updateUrl = "https://github.com/ChloeGong/COMTOOL.git"
     def detectNewVersion(self):
         try:
             page = urllib.request.urlopen(self.updateUrl)

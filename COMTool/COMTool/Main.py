@@ -1,17 +1,20 @@
 import sys,os
 try:
-    import parameters,helpAbout,autoUpdate
+    #import parameters,helpAbout,autoUpdate
+    import parameters,helpAbout,autoUpdate,testSave
     from Combobox import ComboBox
 except ImportError:
-    from COMTool import parameters,helpAbout,autoUpdate
+    #from COMTool import parameters,helpAbout,autoUpdate
+    from COMTool import parameters,helpAbout,autoUpdate,testSave
     from COMTool.Combobox import ComboBox
+from COMTool.wave import Wave
+#from COMTool.testSave import Ui_TestSave
 
-# from COMTool.wave import Wave
-from PyQt5.QtCore import pyqtSignal,Qt
+from PyQt5.QtCore import pyqtSignal,Qt #这个模块被用来实现时间，文件和目录，不同数据类型，流，URL，mime类型，线程和进程
 from PyQt5.QtWidgets import (QApplication, QWidget,QToolTip,QPushButton,QMessageBox,QDesktopWidget,QMainWindow,
                              QVBoxLayout,QHBoxLayout,QGridLayout,QTextEdit,QLabel,QRadioButton,QCheckBox,
-                             QLineEdit,QGroupBox,QSplitter)
-from PyQt5.QtGui import QIcon,QFont,QTextCursor,QPixmap
+                             QLineEdit,QGroupBox,QSplitter)#QtWidgets 模块包含的类提供了一套UI元素来创建经典桌面风格用户界面
+from PyQt5.QtGui import QIcon,QFont,QTextCursor,QPixmap#模块包含的类用于窗口化的系统结构，事件处理，2D绘图，基本图形，字体和文本
 import serial
 import serial.tools.list_ports
 import threading
@@ -43,6 +46,7 @@ class MainWindow(QMainWindow):
     isHideFunctinal = True
     app = None
     isWaveOpen = False
+    isTestSaveOpen = False
 
     def __init__(self,app):
         super().__init__()
@@ -53,6 +57,7 @@ class MainWindow(QMainWindow):
         if not os.path.exists(self.DataPath + "/" + parameters.strDataDirName):
             pathDirList.pop()
             self.DataPath = os.path.abspath("/".join(str(i) for i in pathDirList))
+        ######DataPath 
         self.DataPath = (self.DataPath + "/" + parameters.strDataDirName).replace("\\", "/")
         self.initWindow()
         self.initTool()
@@ -69,38 +74,45 @@ class MainWindow(QMainWindow):
         QToolTip.setFont(QFont('SansSerif', 10))
         # main layout
         frameWidget = QWidget()
-        mainWidget = QSplitter(Qt.Horizontal)
-        frameLayout = QVBoxLayout()
+        mainWidget = QSplitter(Qt.Horizontal) #QSplitter分割窗口，水平分割
+        frameLayout = QVBoxLayout()#QVBoxLayout整个窗口的不同垂直排列 
         self.settingWidget = QWidget()
         self.settingWidget.setProperty("class","settingWidget")
-        self.receiveSendWidget = QSplitter(Qt.Vertical)
+        self.receiveSendWidget = QSplitter(Qt.Vertical)#Receive,send垂直排列
         self.functionalWiget = QWidget()
         settingLayout = QVBoxLayout()
         sendReceiveLayout = QVBoxLayout()
         sendFunctionalLayout = QVBoxLayout()
-        mainLayout = QHBoxLayout()
+        mainLayout = QHBoxLayout()###水平排列
         self.settingWidget.setLayout(settingLayout)
         self.receiveSendWidget.setLayout(sendReceiveLayout)
         self.functionalWiget.setLayout(sendFunctionalLayout)
         mainLayout.addWidget(self.settingWidget)
         mainLayout.addWidget(self.receiveSendWidget)
         mainLayout.addWidget(self.functionalWiget)
-        mainLayout.setStretch(0,2)
-        mainLayout.setStretch(1, 6)
-        mainLayout.setStretch(2, 2)
-        menuLayout = QHBoxLayout()
+        mainLayout.setStretch(0,1)
+        mainLayout.setStretch(1,1)
+        mainLayout.setStretch(2,1)
+        
+        #mainLayout.setStretch(0,2)
+        #mainLayout.setStretch(1,6)
+        #mainLayout.setStretch(2,2)
+        menuLayout = QHBoxLayout()# save,skin,helpAbout,
         mainWidget.setLayout(mainLayout)
         frameLayout.addLayout(menuLayout)
         frameLayout.addWidget(mainWidget)
         frameWidget.setLayout(frameLayout)
         self.setCentralWidget(frameWidget)
 
-        # option layout
-        self.settingsButton = QPushButton()
-        self.skinButton = QPushButton("")
-        # self.waveButton = QPushButton("")
-        self.aboutButton = QPushButton()
+        # option layout 在这里设置可点击按钮
+        self.settingsButton = QPushButton()#QPushButton 能点能弹出的窗口
+        self.skinButton = QPushButton(parameters.strSkin)
+        self.waveButton = QPushButton("")
+        self.aboutButton = QPushButton("")
         self.functionalButton = QPushButton()
+        self.testButton = QPushButton(parameters.strTestSave)####多加了一个test按钮
+        self.saveButton = QPushButton(parameters.strSave)####Save
+        # 在这里设置下拉框
         self.encodingCombobox = ComboBox()
         self.encodingCombobox.addItem("ASCII")
         self.encodingCombobox.addItem("UTF-8")
@@ -108,46 +120,63 @@ class MainWindow(QMainWindow):
         self.encodingCombobox.addItem("GBK")
         self.encodingCombobox.addItem("GB2312")
         self.encodingCombobox.addItem("GB18030")
-        self.settingsButton.setProperty("class", "menuItem1")
+
+        self.settingsButton.setProperty("class", "menuItem1")#界面上的四个按钮
         self.skinButton.setProperty("class", "menuItem2")
         self.aboutButton.setProperty("class", "menuItem3")
         self.functionalButton.setProperty("class", "menuItem4")
-        # self.waveButton.setProperty("class", "menuItem5")
+        self.waveButton.setProperty("class", "menuItem5")
+        self.testButton.setProperty("class","menuItems6")##########
+        self.saveButton.setProperty("class","menuItems7")
         self.settingsButton.setObjectName("menuItem")
         self.skinButton.setObjectName("menuItem")
         self.aboutButton.setObjectName("menuItem")
         self.functionalButton.setObjectName("menuItem")
-        # self.waveButton.setObjectName("menuItem")
+        self.waveButton.setObjectName("menuItem")
+        self.testButton.setObjectName("menuItem")#########
+        self.saveButton.setObjectName("menuItem")
+        menuLayout.addStretch(0)
         menuLayout.addWidget(self.settingsButton)
+        menuLayout.addStretch(0)
         menuLayout.addWidget(self.skinButton)
-        # menuLayout.addWidget(self.waveButton)
+        menuLayout.addStretch(0)
+        menuLayout.addWidget(self.waveButton)
+        menuLayout.addStretch(0)
         menuLayout.addWidget(self.aboutButton)
         menuLayout.addStretch(0)
+        menuLayout.addWidget(self.testButton)########加一个按钮
+        menuLayout.addStretch(0)
+        menuLayout.addWidget(self.saveButton)
+        menuLayout.addStretch(0)
         menuLayout.addWidget(self.encodingCombobox)
+        menuLayout.addStretch(0)
         menuLayout.addWidget(self.functionalButton)
 
 
         # widgets receive and send area
         self.receiveArea = QTextEdit()
         self.sendArea = QTextEdit()
-        self.clearReceiveButtion = QPushButton(parameters.strClearReceive)
-        self.sendButtion = QPushButton(parameters.strSend)
+        self.clearReceiveButton = QPushButton(parameters.strClearReceive)
+        self.sendButton = QPushButton(parameters.strSend) 
         self.sendHistory = ComboBox()
         sendWidget = QWidget()
         sendAreaWidgetsLayout = QHBoxLayout()
         sendWidget.setLayout(sendAreaWidgetsLayout)
         buttonLayout = QVBoxLayout()
-        buttonLayout.addWidget(self.clearReceiveButtion)
+        buttonLayout.addWidget(self.clearReceiveButton)
         buttonLayout.addStretch(1)
-        buttonLayout.addWidget(self.sendButtion)
+        buttonLayout.addWidget(self.sendButton)
         sendAreaWidgetsLayout.addWidget(self.sendArea)
         sendAreaWidgetsLayout.addLayout(buttonLayout)
         sendReceiveLayout.addWidget(self.receiveArea)
         sendReceiveLayout.addWidget(sendWidget)
         sendReceiveLayout.addWidget(self.sendHistory)
-        sendReceiveLayout.setStretch(0, 7)
-        sendReceiveLayout.setStretch(1, 2)
+        sendReceiveLayout.setStretch(0, 1)
+        sendReceiveLayout.setStretch(1, 1)
         sendReceiveLayout.setStretch(2, 1)
+        # sendReceiveLayout.setStretch(0, 7)
+        # sendReceiveLayout.setStretch(1, 2)
+        # sendReceiveLayout.setStretch(2, 1)
 
         # widgets serial settings
         serialSettingsGroupBox = QGroupBox(parameters.strSerialSettings)
@@ -231,7 +260,7 @@ class MainWindow(QMainWindow):
         self.sendSettingsScheduledCheckBox.setMaximumWidth(75)
         self.sendSettingsScheduled.setMaximumWidth(75)
         self.sendSettingsCFLF = QCheckBox(parameters.strCRLF)
-        self.sendSettingsCFLF.setChecked(False)
+        self.sendSettingsCFLF.setChecked(False)  #QGridLayout中addwidget(行，列，占用行数，占用列数)
         serialSendSettingsLayout.addWidget(self.sendSettingsAscii,1,0,1,1)
         serialSendSettingsLayout.addWidget(self.sendSettingsHex,1,1,1,1)
         serialSendSettingsLayout.addWidget(self.sendSettingsScheduledCheckBox, 2, 0, 1, 1)
@@ -239,7 +268,7 @@ class MainWindow(QMainWindow):
         serialSendSettingsLayout.addWidget(self.sendSettingsCFLF, 3, 0, 1, 2)
         serialSendSettingsGroupBox.setLayout(serialSendSettingsLayout)
         settingLayout.addWidget(serialSendSettingsGroupBox)
-
+        #调整 setting area 之间的比例
         settingLayout.setStretch(0, 5)
         settingLayout.setStretch(1, 2.5)
         settingLayout.setStretch(2, 2.5)
@@ -265,9 +294,10 @@ class MainWindow(QMainWindow):
         self.statusBar().addWidget(self.statusBarReceiveCount,3)
         # self.statusBar()
 
-        self.resize(800, 500)
+        self.resize(1000, 800)#小窗口的大小 original(800,500)
         self.MoveToCenter()
-        self.setWindowTitle(parameters.appName+" V"+str(helpAbout.versionMajor)+"."+str(helpAbout.versionMinor))
+        #窗口的标题
+        self.setWindowTitle(parameters.appName+" V"+str(helpAbout.versionMajor)+"."+str(helpAbout.versionMinor)+"."+str(helpAbout.versionDev))
         icon = QIcon()
         print("icon path:"+self.DataPath+"/"+parameters.appIcon)
         icon.addPixmap(QPixmap(self.DataPath+"/"+parameters.appIcon), QIcon.Normal, QIcon.Off)
@@ -276,12 +306,12 @@ class MainWindow(QMainWindow):
             ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID("comtool")
         self.show()
         print("config file path:",os.getcwd()+"/comtool.settings.config")
-
+ 
     def initEvent(self):
         self.serialOpenCloseButton.clicked.connect(self.openCloseSerial)
-        self.sendButtion.clicked.connect(self.sendData)
+        self.sendButton.clicked.connect(self.sendData)
         self.receiveUpdateSignal.connect(self.updateReceivedDataDisplay)
-        self.clearReceiveButtion.clicked.connect(self.clearReceiveBuffer)
+        self.clearReceiveButton.clicked.connect(self.clearReceiveBuffer)
         self.serialPortCombobox.clicked.connect(self.portComboboxClicked)
         self.sendSettingsHex.clicked.connect(self.onSendSettingsHexClicked)
         self.sendSettingsAscii.clicked.connect(self.onSendSettingsAsciiClicked)
@@ -296,7 +326,8 @@ class MainWindow(QMainWindow):
         self.addButton.clicked.connect(self.functionAdd)
         self.functionalButton.clicked.connect(self.showHideFunctional)
         self.sendArea.currentCharFormatChanged.connect(self.sendAreaFontChanged)
-        # self.waveButton.clicked.connect(self.openWaveDisplay)
+        self.waveButton.clicked.connect(self.openWaveDisplay)
+        self.testButton.clicked.connect(self.openSaveFile)##############
         self.checkBoxRts.clicked.connect(self.rtsChanged)
         self.checkBoxDtr.clicked.connect(self.dtrChanged)
 
@@ -400,7 +431,7 @@ class MainWindow(QMainWindow):
                 data = data.replace("\n", " ")
             data = self.hexStringB2Hex(data)
             if data == -1:
-                self.errorSignal.emit( parameters.strWriteFormatError)
+                self.errorSignal.emit(parameters.strWriteFormatError)
                 return -1
         else:
             data = data.encode(self.encodingCombobox.currentText(),"ignore")
@@ -431,7 +462,7 @@ class MainWindow(QMainWindow):
             self.errorSignal.emit(parameters.strWriteError)
             # print(e)
 
-    def scheduledSend(self):
+    def scheduledSend(self): #schedule 时间的设定函数
         self.isScheduledSending = True
         while self.sendSettingsScheduledCheckBox.isChecked():
             self.sendData()
@@ -441,7 +472,7 @@ class MainWindow(QMainWindow):
                 self.errorSignal.emit(parameters.strTimeFormatError)
         self.isScheduledSending = False
 
-    def receiveData(self):
+    def receiveData(self):#接收数据：最大 2048 byte 最小 1 byte
         self.receiveProgressStop = False
         self.timeLastReceive = 0
         while(not self.receiveProgressStop):
@@ -451,8 +482,8 @@ class MainWindow(QMainWindow):
                 bytes = self.com.read(length)
                 if bytes!= None:
 
-                    # if self.isWaveOpen:
-                    #     self.wave.displayData(bytes)
+                    if self.isWaveOpen:
+                         self.wave.displayData(bytes)
                     self.receiveCount += len(bytes)
                     if self.receiveSettingsAutoLinefeed.isChecked():
                         if time.time() - self.timeLastReceive> int(self.receiveSettingsAutoLinefeedTime.text())/1000:
@@ -476,7 +507,7 @@ class MainWindow(QMainWindow):
                     self.errorSignal.emit("device disconnected or multiple access on port?")
             # time.sleep(0.009)
 
-    def updateReceivedDataDisplay(self,str):
+    def updateReceivedDataDisplay(self,str): #更新传入的数据
         if str != "":
             curScrollValue = self.receiveArea.verticalScrollBar().value()
             self.receiveArea.moveCursor(QTextCursor.End)
@@ -599,7 +630,7 @@ class MainWindow(QMainWindow):
             return -1
         # print(data)
         return data
-
+    #参数的定义和使用
     def programExitSaveParameters(self):
         paramObj = parameters.ParametersToSave()
         paramObj.baudRate = self.serailBaudrateCombobox.currentIndex()
@@ -715,7 +746,7 @@ class MainWindow(QMainWindow):
         else:
             self.hideSettings()
             self.isHideSettings = True
-
+   #隐藏或者显示setting
     def showSettings(self):
         self.settingWidget.show()
         self.settingsButton.setStyleSheet(
@@ -754,29 +785,47 @@ class MainWindow(QMainWindow):
         self.app.setStyleSheet(file.read().replace("$DataPath", self.DataPath))
 
     def showAbout(self):
-        QMessageBox.information(self, "About","<h1 style='color:#f75a5a';margin=10px;>"+parameters.appName+
+        QMessageBox.about(self, "About","<h1 style='color:#f75a5a';margin=10px;>"+parameters.appName+
                                 '</h1><br><b style="color:#08c7a1;margin = 5px;">V'+str(helpAbout.versionMajor)+"."+
                                 str(helpAbout.versionMinor)+"."+str(helpAbout.versionDev)+
                                 "</b><br><br>"+helpAbout.date+"<br><br>"+helpAbout.strAbout())
-
+     
     def autoUpdateDetect(self):
         auto = autoUpdate.AutoUpdate()
         if auto.detectNewVersion():
-            auto.OpenBrowser()
+            auto.OpenBrowser()#自动打开浏览器 
 
     def openDevManagement(self):
         os.system('start devmgmt.msc')
 
-    # def openWaveDisplay(self):
-    #     self.wave = Wave()
-    #     self.isWaveOpen = True
-    #     self.wave.closed.connect(self.OnWaveClosed)
-    #
-    # def OnWaveClosed(self):
-    #     print("wave window closed")
-    #     self.isWaveOpen = False
-
-
+    def openWaveDisplay(self):
+        self.wave = Wave()
+        self.isWaveOpen = True
+        self.wave.closed.connect(self.OnWaveClosed)
+    
+    def OnWaveClosed(self):
+        print("wave window closed")
+        self.isWaveOpen = False
+   
+    def showTestSave(self):
+        reply = QMessageBox.question(self,"Test",str(testSave.test),QMessageBox.Save,QMessageBox.Cancel) # self,"title",“information”
+        # if reply == QMessageBox.Save:
+        #    self.resize(800,500)
+          
+        # else :
+        #    self.move(200,200)
+  # save file         
+    def openSaveFile(self):
+        self.save = testSave.Ui_TestSave()
+        #self.table = QMainWindow()
+        self.save.init()
+        self.show()
+        
+    def OnSaveClosed(self):
+        print("Are you sure to quit?")
+        self.isWaveOpen = False
+        #self.closeButton.setTooltip("Close the widget")
+        
 
 def main():
     app = QApplication(sys.argv)
@@ -794,7 +843,8 @@ def main():
     t.setDaemon(True)
     t.start()
     sys.exit(app.exec_())
-
+ 
 if __name__ == '__main__':
     main()
+    
 
