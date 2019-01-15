@@ -817,10 +817,8 @@ class MainWindow(QMainWindow):
   # save file         
     def openSaveFile(self):
         self.save = testSave.Ui_TestSave()
-        #self.table = QMainWindow()
-        self.save.init()
         self.show()
-        
+        self.MoveToCenter()
     def OnSaveClosed(self):
         print("Are you sure to quit?")
         self.isWaveOpen = False
